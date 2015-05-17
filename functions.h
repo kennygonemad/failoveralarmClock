@@ -94,6 +94,20 @@ String printableTime(int secs, int mins, int h)
 }
 String printableDate(int dom, int month, int year)
 {
-	String printable = (String)dom + '/' + month + "/" + year;
+	String printable;
+	if (dom < 10)
+		printable += "0" + (String)dom;
+	else
+		printable += dom;
+	printable += "/";
+	if (month < 10)
+		printable += "0" + (String)month;
+	else
+		printable += month;
+	printable += "/";
+	if (year < 10)
+		printable += "0" + (String)year;
+	else
+		printable += year;
 	return printable;
 }

@@ -1,8 +1,10 @@
 #include "functions.h"
 #include <LiquidCrystal.h>
 #include <Wire.h>
+#include "EEPROM\EEPROM.h"
+#define alarmAddress 0
 
-byte seconds, minutes, hours, dow, dom, month, year, currentDay;
+byte seconds, minutes, hours, dow, dom, month, year, currentDay, alarmSec, alarmMin, alarmHour;
 LiquidCrystal panel(8, 9, 4, 5, 6, 7);
 
 void setup()
@@ -15,14 +17,18 @@ void setup()
 	Wire.begin();
 	checkTime();
 	currentDay = 0;
+	alarmHour = EEPROM.read(alarmAddress);
+	alarmMin = EEPROM.read(alarmAddress+1);
+	alarmSec = EEPROM.read(alarmAddress+2);
+	//Serial.print(printableDate())
 //	wireCheck = Wire.available();
 }
 
 void loop()
 {
 	printTime();
-	if (currentDay != dom)
-		printDate();
+	//if (currentDay != dom)
+	printDate();
 	if (readButtons() == SELECT)
 		if (changeTime())
 			if (changeDate())
@@ -148,7 +154,8 @@ int changeTime(){
 	if (rt == 1)
 	{
 		setTime(secs, mins, h, dow, dom, month, year);
-		printableDate(dom, month, year);
+		panel.setCursor(4, 1);
+		panel.print(printableDate(dom, month, year));
 		panel.noBlink();
 		return 0;
 	}
@@ -158,7 +165,130 @@ int changeTime(){
 		return -1;
 }
 int changeDate(){
+	checkTime();
+	int d = dom;
+	int m = month;
+	int y = year;
+	int buffer = d;
+	int selected = 1;
+	int pressed = 0;
+	int lastButton;
+	int button;
+	int rt = 0;
+	int cursorLock = 5;
+	int limit = 31;
+	panel.setCursor(4, 0);
+	panel.print("Set Date");
+	panel.setCursor(4, 1);
+	panel.print(printableDate(d, m, y));
+	panel.setCursor(5, 1);
+	panel.blink();
+	lastButton = readButtons();
+	Serial.print("preloop\n");
+	delay(2000);
+	while (rt == 0)
+	{
+		Serial.print("loop\n");
+		lastButton = button;
+		button = readButtons();
+		switch (button)
+		{
+		case SELECT:
+			rt = 2;
+			break;
+		case LEFT:
 
+			if (selected == 3)
+				selected = 1;
+			else
+				selected++;
+			switch (selected)
+			{
+			case 1:
+				buffer = d;
+				cursorLock = 5;
+				panel.setCursor(5, 1);
+				limit = 31;
+				break;
+			case 2:
+				buffer = m;
+				cursorLock = 8;
+				panel.setCursor(8, 1);
+				limit = 12;
+				break;
+			case 3:
+				buffer = y;
+				cursorLock = 11;
+				panel.setCursor(11, 1);
+				limit = 99;
+			default:
+				break;
+			}
+			delay(500);
+			break;
+		case UP:
+			if (++buffer >= limit)
+				buffer = 0;
+			if (pressed++ > 5)
+				delay(100);
+			else
+				delay(500);
+			//panel.setCursor(cursorLock, 1);
+			break;
+		case DOWN:
+			if (--buffer < 0)
+				buffer = limit - 1;
+			if (pressed++ > 5)
+				delay(100);
+			else
+				delay(500);
+			break;
+			//panel.setCursor(cursorLock, 1);
+		case RIGHT:
+			rt = 1;
+			break;
+		default:
+			break;
+		}
+
+		switch (selected)
+		{
+		case 1:
+			d = buffer;
+			panel.setCursor(5, 1);
+			break;
+		case 2:
+			m = buffer;
+			panel.setCursor(8, 1);
+			break;
+		case 3:
+			y = buffer;
+			panel.setCursor(11, 1);
+			break;
+		default:
+			break;
+		}
+		if (lastButton != button)
+			pressed = 0;
+		panel.setCursor(4, 1);
+		panel.print(printableDate(d, m, y));
+		panel.setCursor(cursorLock, 1);
+	}
+	Serial.print("returns\n");
+	if (rt == 1)
+	{
+		setTime(seconds, minutes, hours, 0, d, m, y);
+		panel.setCursor(4, 1);
+		panel.print(printableDate(dom, month, year));
+		panel.noBlink();
+		return 0;
+	}
+	else if (rt == 2)
+	{
+		return 1;
+	}
+	else
+		return -1;
 }
 int changeAlarm(){
 
@@ -172,7 +302,7 @@ void printTime(){
 void printDate(){
 	checkTime();
 	panel.setCursor(4, 1);
-	panel.print(printableDate(dom, month, hours));
+	panel.print(printableDate(dom, month, year));
 
 }
 void inline checkTime()
