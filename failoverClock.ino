@@ -291,7 +291,141 @@ int changeDate(){
 		return -1;
 }
 int changeAlarm(){
+	//	checkTime();
+	int secs = alarmSec;
+	int mins = alarmMin;
+	int h = alarmHour;
+	int buffer = h;
+	int selected = 1;
+	int pressed = 0;
+	int lastButton;
+	int button;
+	int rt = 0;
+	int cursorLock = 5;
+	int limit = 24;
+	panel.setCursor(4, 0);
+	panel.print("Set Alarm");
+	panel.setCursor(4, 1);
+	panel.print(printableTime(alarmSec, alarmMin, alarmHour));
+	panel.setCursor(5, 1);
+	panel.blink();
+	lastButton = readButtons();
+	Serial.print("preloop\n");
+	delay(2000);
+	while (rt == 0)
+	{
+		Serial.print("loop\n");
+		lastButton = button;
+		button = readButtons();
+		switch (button)
+		{
+		case SELECT:
+			rt = 2;
+			break;
+		case LEFT:
 
+			if (selected == 3)
+				selected = 1;
+			else
+				selected++;
+			switch (selected)
+			{
+			case 1:
+				buffer = h;
+				cursorLock = 5;
+				panel.setCursor(5, 1);
+				limit = 24;
+				break;
+			case 2:
+				buffer = mins;
+				cursorLock = 8;
+				panel.setCursor(8, 1);
+				limit = 60;
+				break;
+			case 3:
+				buffer = secs;
+				cursorLock = 11;
+				panel.setCursor(11, 1);
+				limit = 60;
+			default:
+				break;
+			}
+			delay(500);
+			break;
+		case UP:
+			if (++buffer >= limit)
+				buffer = 0;
+			if (pressed++ > 5)
+				delay(100);
+			else
+				delay(500);
+			//panel.setCursor(cursorLock, 1);
+			break;
+		case DOWN:
+			if (--buffer < 0)
+				buffer = limit - 1;
+			if (pressed++ > 5)
+				delay(100);
+			else
+				delay(500);
+			break;
+			//panel.setCursor(cursorLock, 1);
+		case RIGHT:
+			rt = 1;
+			break;
+		default:
+			break;
+		}
+
+		switch (selected)
+		{
+		case 1:
+			h = buffer;
+			panel.setCursor(5, 1);
+			break;
+		case 2:
+			mins = buffer;
+			panel.setCursor(8, 1);
+			break;
+		case 3:
+			secs = buffer;
+			panel.setCursor(11, 1);
+			break;
+		default:
+			break;
+		}
+		if (lastButton != button)
+			pressed = 0;
+		panel.setCursor(4, 1);
+		panel.print(printableTime(secs, mins, h));
+		panel.setCursor(cursorLock, 1);
+	}
+	Serial.print("returns\n");
+	if (rt == 1)
+	{
+		//setTime(secs, mins, h, dow, dom, month, year);
+		alarmSec = secs;
+		alarmMin = mins;
+		alarmHour = h;
+		EEPROM.write(alarmAddress, alarmHour);
+		EEPROM.write(alarmAddress + 1, alarmMin);
+		EEPROM.write(alarmAddress + 2, alarmSec);
+		panel.setCursor(4, 1);
+		panel.print(printableDate(dom, month, year));
+		panel.setCursor(12, 0);
+		panel.print(" ");
+		panel.noBlink();
+		return 0;
+	}
+	else if (rt == 2)
+	{
+		panel.setCursor(12, 0);
+		panel.print(" ");
+		panel.noBlink();
+		return 1;
+	}
+	else
+		return -1;
 }
 void printTime(){
 	checkTime();
