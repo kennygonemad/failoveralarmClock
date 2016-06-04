@@ -1,12 +1,12 @@
 #include "functions.h"
 #include <LiquidCrystal.h>
 #include <Wire.h>
-#include "EEPROM\EEPROM.h"
+#include <EEPROM.h>
 #define alarmAddress 0
 #define speakerPin 0
 #define LDRPin 1
 #define LDRThreshold 10
-#define alarmOffset 10
+#define alarmOffset 20
 byte seconds, minutes, hours, dow, dom, month, year, currentDay, alarmSec, alarmMin, alarmHour;
 LiquidCrystal panel(8, 9, 4, 5, 6, 7);
 
@@ -69,16 +69,17 @@ void playAlarm(int alarmType, int bellPin)
 
 int checkAlarm(int LDR)
 {
+	checkTime();
 	int LDRValue = analogRead(LDR);
 	if (alarmHour == hours)
 	{
 		if (alarmMin == minutes)
 		{
-			if (LDRValue > LDRThreshold)
+			if (LDRValue < LDRThreshold)
 				return 1;
 		}
 		else if ((alarmMin + alarmOffset) == minutes)
-			if (LDRValue < LDRThreshold)
+			if (LDRValue > LDRThreshold)
 				return 2;
 	}
 }
